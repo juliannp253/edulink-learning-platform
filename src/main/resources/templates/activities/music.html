@@ -5,12 +5,25 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body { background-color: #0d1b2a; color: white; }
-        .video-container { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; border-radius: 15px; }
+        
+        /* Contenedor con capa de bloqueo */
+        .video-wrapper { position: relative; border-radius: 15px; overflow: hidden; }
+        .video-container { position: relative; padding-bottom: 56.25%; height: 0; }
         .video-container iframe { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+        
+        /* Capa invisible para bloquear clics en el video */
+        .video-overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            z-index: 10; background: rgba(0,0,0,0); /* Totalmente transparente */
+        }
+
         .option-btn { background-color: #1b263b; border: 2px solid #415a77; color: white; transition: 0.3s; margin: 10px 0; width: 100%; text-align: left; padding: 15px; }
-        .option-btn:hover { background-color: #415a77; }
+        .option-btn:hover:not([disabled]) { background-color: #415a77; }
         .correct { background-color: #2a9d8f !important; border-color: #264653 !important; }
         .incorrect { background-color: #e76f51 !important; border-color: #d62828 !important; }
+        
+        .btn-repeat { background-color: #415a77; color: white; border: none; padding: 10px 20px; border-radius: 5px; transition: 0.3s; }
+        .btn-repeat:hover { background-color: #778da9; }
     </style>
 </head>
 <body>
@@ -19,15 +32,23 @@
     <div class="container py-5">
         <div class="row">
             <div class="col-lg-8">
-                <div class="video-container shadow mb-4">
-                    <div id="player"></div>
+                <div class="video-wrapper shadow mb-4">
+                    <div class="video-overlay" id="blocker"></div> <div class="video-container">
+                        <div id="player"></div>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <button class="btn-repeat shadow" onclick="replaySegment()">
+                        🔄 Listen Again (Segment Only)
+                    </button>
                 </div>
             </div>
             
             <div class="col-lg-4">
                 <div class="card bg-dark text-white p-4 border-secondary shadow">
                     <h4 th:text="${challenge.title}">Challenge</h4>
-                    <p class="lead" id="question-text" th:text="${challenge.questionText}">Wait for the pause...</p>
+                    <p class="lead" id="question-text" th:text="${challenge.questionText}">Wait for the music...</p>
                     
                     <div id="options-container" style="display: none;">
                         <button th:each="opt : ${options}" 
@@ -65,8 +86,11 @@
                 playerVars: {
                     'start': startTime,
                     'autoplay': 1,
+                    'controls': 0,       // OCULTA la barra de progreso y botones
+                    'disablekb': 1,     // Bloquea teclado (flechas, espacio)
                     'modestbranding': 1,
-                    'rel': 0
+                    'rel': 0,
+                    'iv_load_policy': 3 // Oculta anotaciones
                 },
                 events: {
                     'onStateChange': onPlayerStateChange
@@ -74,46 +98,53 @@
             });
         }
 
+        function startMonitoring() {
+            clearInterval(checkInterval);
+            checkInterval = setInterval(function() {
+                var currentTime = player.getCurrentTime();
+                if (currentTime >= pauseTime) {
+                    player.pauseVideo();
+                    document.getElementById('options-container').style.display = 'block';
+                    document.getElementById('question-text').classList.add('text-warning', 'fw-bold');
+                    clearInterval(checkInterval);
+                }
+            }, 500);
+        }
+
         function onPlayerStateChange(event) {
             if (event.data == YT.PlayerState.PLAYING) {
-                checkInterval = setInterval(function() {
-                    var currentTime = player.getCurrentTime();
-                    if (currentTime >= pauseTime) {
-                        player.pauseVideo();
-                        document.getElementById('options-container').style.display = 'block';
-                        document.getElementById('question-text').classList.add('text-warning', 'fw-bold');
-                        clearInterval(checkInterval);
-                    }
-                }, 500);
+                startMonitoring();
             } else {
                 clearInterval(checkInterval);
             }
         }
 
+        // FUNCIÓN CLAVE: Reinicia solo el segmento
+        function replaySegment() {
+            player.seekTo(startTime);
+            player.playVideo();
+            // Ocultar opciones si el usuario repite antes de contestar
+            document.getElementById('options-container').style.display = 'none';
+            document.getElementById('question-text').classList.remove('text-warning', 'fw-bold');
+        }
+
         function checkAnswer(btn, correct) {
-            // 2. CAMBIO IMPORTANTE: Usar el ID del token igual que en emoji.html
             const csrfToken = document.getElementById('csrfToken').value;
 
             if (btn.innerText.trim() === correct) {
                 btn.classList.add('correct');
                 document.getElementById('next-container').style.display = 'block';
                 
-                // --- LÓGICA DE PUNTOS CORREGIDA ---
                 fetch('/api/progress/add-points', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken // Token recuperado correctamente
+                        'X-CSRF-TOKEN': csrfToken
                     }
                 })
-                .then(response => {
-                    if (response.ok) return response.json();
-                })
-                .then(data => {
-                    console.log("Puntos actualizados: " + data.newTotal);
-                })
-                .catch(error => console.error('Error al guardar puntos:', error));
-                // ----------------------------------
+                .then(response => response.json())
+                .then(data => console.log("Puntos: " + data.newTotal))
+                .catch(err => console.error(err));
 
                 var btns = document.getElementsByClassName('option-btn');
                 for(var i=0; i<btns.length; i++) btns[i].disabled = true;

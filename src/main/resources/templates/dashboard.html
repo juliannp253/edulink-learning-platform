@@ -9,6 +9,9 @@
         .card-activity:hover { transform: translateY(-10px); background-color: #415a77; }
         .stats-bar { background-color: #1b263b; border-radius: 10px; padding: 20px; margin-bottom: 30px; }
         .badge-level { background-color: #e0e1dd; color: #0d1b2a; font-weight: bold; }
+        /* Estilo para el botón de logout para que no se vea como un botón de formulario tosco */
+        .btn-logout { background: none; border: 1px solid #e76f51; color: #e76f51; padding: 5px 15px; border-radius: 5px; transition: 0.3s; }
+        .btn-logout:hover { background-color: #e76f51; color: white; }
     </style>
 </head>
 <body>
@@ -18,9 +21,16 @@
                 <h2 class="mb-0">Welcome, <span th:text="${username}">User</span>!</h2>
                 <span class="badge badge-level" th:text="${level}">LEVEL</span>
             </div>
-            <div class="text-end">
-                <h4 class="mb-0">Score: <span th:text="${points}">0</span> pts</h4>
-                <small class="text-muted">Keep learning!</small>
+            
+            <div class="text-end d-flex align-items-center">
+                <div class="me-4">
+                    <h4 class="mb-0">Score: <span th:text="${points}">0</span> pts</h4>
+                    <small class="text-muted">Keep learning!</small>
+                </div>
+                
+                <form th:action="@{/logout}" method="post">
+                    <button type="submit" class="btn-logout">Logout</button>
+                </form>
             </div>
         </div>
 
