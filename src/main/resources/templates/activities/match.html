@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Match & Learn - EduLink</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0d1b2a; color: white; }
+        .word-card { 
+            background-color: #1b263b; 
+            border: 3px solid #415a77; 
+            border-radius: 15px; 
+            padding: 40px;
+            font-size: 2.5rem;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        .option-card {
+            background-color: #415a77;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            padding: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+            text-align: center;
+            font-size: 1.2rem;
+        }
+        .option-card:hover { border-color: #e0e1dd; background-color: #1b263b; }
+        .selected-correct { background-color: #2a9d8f !important; transform: scale(1.05); }
+        .selected-incorrect { background-color: #e76f51 !important; }
+    </style>
+</head>
+<body>
+    <input type="hidden" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+    <div class="container py-5 text-center">
+        <h2 class="mb-5">Match the word!</h2>
+
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="word-card shadow animate__animated animate__fadeIn">
+                    <span th:text="${challenge.questionText}">Palabra</span>
+                    <div style="font-size: 1rem; color: #778da9;" class="mt-2 text-uppercase">Spanish</div>
+                </div>
+
+                <div class="row g-3">
+                    <div class="col-6" th:each="opt : ${options}">
+                        <div class="option-card shadow-sm" 
+                             th:text="${opt}" 
+                             th:onclick="checkMatch(this, [[${challenge.correctAnswer}]])">
+                        </div>
+                    </div>
+                </div>
+
+                <div id="next-container" style="display: none;" class="mt-5">
+                    <h3 class="text-success mb-3">Great job! +10 pts</h3>
+                    <a th:href="@{/activity/match(index=${nextIndex})}" class="btn btn-primary btn-lg">Next Word</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function checkMatch(card, correct) {
+            const csrfToken = document.getElementById('csrfToken').value;
+
+            if (card.innerText.trim() === correct) {
+                card.classList.add('selected-correct');
+                document.getElementById('next-container').style.display = 'block';
+                
+                // Bloquear clics
+                const cards = document.getElementsByClassName('option-card');
+                for(let c of cards) c.style.pointerEvents = 'none';
+
+                // Puntos
+                fetch('/api/progress/add-points', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken }
+                }).then(res => res.json()).then(data => console.log("Total:", data.newTotal));
+
+            } else {
+                card.classList.add('selected-incorrect');
+                setTimeout(() => card.classList.remove('selected-incorrect'), 500);
+            }
+        }
+    </script>
+</body>
+</html>

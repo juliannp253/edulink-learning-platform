@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Emoji Phrase - EduLink</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0d1b2a; color: white; font-family: 'Segoe UI', sans-serif; }
+        .emoji-card { 
+            background-color: #1b263b; 
+            border: 2px solid #415a77; 
+            border-radius: 20px; 
+            padding: 50px;
+            margin-bottom: 30px;
+        }
+        .emoji-display { font-size: 8rem; margin-bottom: 20px; transition: transform 0.3s; }
+        .emoji-display:hover { transform: scale(1.1); }
+        .option-btn { 
+            background-color: #1b263b; 
+            border: 2px solid #415a77; 
+            color: white; 
+            font-size: 1.2rem;
+            padding: 15px;
+            margin-bottom: 15px;
+            width: 100%;
+            transition: 0.2s;
+        }
+        .option-btn:hover:not([disabled]) { background-color: #415a77; transform: translateY(-3px); }
+        .correct { background-color: #2a9d8f !important; border-color: #264653 !important; }
+        .incorrect { background-color: #e76f51 !important; border-color: #d62828 !important; }
+    </style>
+</head>
+<body>
+    <input type="hidden" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8 text-center">
+                
+                <h2 class="mb-4" th:text="${challenge.title}">Emoji Challenge</h2>
+
+                <div class="emoji-card shadow">
+                    <div class="emoji-display" th:text="${challenge.mediaId}">🧩</div>
+                    <h3 id="question-text" th:text="${challenge.questionText}">What is this?</h3>
+                </div>
+
+                <div class="row">
+                    <div class="col-6" th:each="opt : ${options}">
+                        <button class="btn option-btn" 
+                                th:text="${opt}" 
+                                th:onclick="checkAnswer(this, [[${challenge.correctAnswer}]])">
+                        </button>
+                    </div>
+                </div>
+
+                <div id="next-container" style="display: none;" class="mt-4">
+                    <div class="alert alert-success border-0 bg-transparent text-success">
+                        <h4 class="fw-bold">✨ Correct! +10 points</h4>
+                    </div>
+                    <a th:href="@{/activity/emoji(index=${nextIndex})}" class="btn btn-primary btn-lg px-5 shadow">Next Emoji</a>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        function checkAnswer(btn, correct) {
+            const selectedAnswer = btn.innerText.trim();
+            const csrfToken = document.getElementById('csrfToken').value;
+
+            if (selectedAnswer === correct) {
+                // Estilo de éxito
+                btn.classList.add('correct');
+                document.getElementById('next-container').style.display = 'block';
+                document.getElementById('question-text').classList.add('text-success', 'fw-bold');
+
+                // Bloquear botones
+                const btns = document.getElementsByClassName('option-btn');
+                for(let b of btns) b.disabled = true;
+
+                // --- LLAMADA AL BACKEND PARA SUMAR PUNTOS ---
+                fetch('/api/progress/add-points', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                })
+                .then(response => {
+                    if (response.ok) return response.json();
+                })
+                .then(data => {
+                    console.log("Puntos guardados. Nuevo total:", data.newTotal);
+                })
+                .catch(error => console.error('Error al guardar puntos:', error));
+
+            } else {
+                // Estilo de error
+                btn.classList.add('incorrect');
+                setTimeout(() => btn.classList.remove('incorrect'), 800);
+            }
+        }
+    </script>
+</body>
+</html>
