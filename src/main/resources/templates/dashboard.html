@@ -1,69 +1,87 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Dashboard - EduLink</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - EduLink UANE</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #0d1b2a; color: white; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card-activity { background-color: #1b263b; border: 1px solid #415a77; transition: transform 0.3s; cursor: pointer; }
-        .card-activity:hover { transform: translateY(-10px); background-color: #415a77; }
-        .stats-bar { background-color: #1b263b; border-radius: 10px; padding: 20px; margin-bottom: 30px; }
-        .badge-level { background-color: #e0e1dd; color: #0d1b2a; font-weight: bold; }
-        /* Estilo para el botón de logout para que no se vea como un botón de formulario tosco */
-        .btn-logout { background: none; border: 1px solid #e76f51; color: #e76f51; padding: 5px 15px; border-radius: 5px; transition: 0.3s; }
-        .btn-logout:hover { background-color: #e76f51; color: white; }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
 </head>
 <body>
+
+    <img th:src="@{/logo_universidad.png}" alt="Logo UANE" class="uni-logo-fixed">
+
     <div class="container py-5">
-        <div class="stats-bar d-flex justify-content-between align-items-center shadow">
-            <div>
-                <h2 class="mb-0">Welcome, <span th:text="${username}">User</span>!</h2>
-                <span class="badge badge-level" th:text="${level}">LEVEL</span>
+        
+        <div class="stats-bar d-flex justify-content-between align-items-center shadow-sm">
+            <div class="d-flex align-items-center">
+                <div class="me-3">
+                    <div class="bg-light rounded-circle p-3 shadow-sm d-flex justify-content-center align-items-center" style="width: 60px; height: 60px;">
+                        <i class="bi bi-person-circle" style="font-size: 1.8rem; color: var(--uane-dark);"></i>
+                    </div>
+                </div>
+                <div>
+                    <h2 class="mb-1 brand-logo" style="font-size: 1.2rem; margin-bottom: 0;">
+                        HOLA, <span th:text="${username}">PLAYER</span>
+                    </h2>
+                    <span class="badge-level" th:text="${level}">LEVEL</span>
+                </div>
             </div>
             
-            <div class="text-end d-flex align-items-center">
-                <div class="me-4">
-                    <h4 class="mb-0">Score: <span th:text="${points}">0</span> pts</h4>
-                    <small class="text-muted">Keep learning!</small>
+            <div class="d-flex align-items-center">
+                <div class="me-4 text-end d-none d-md-block">
+                    <small class="text-muted fw-bold d-block">PUNTUACIÓN TOTAL</small>
+                    <span class="score-display"><span th:text="${points}">0</span> PTS</span>
                 </div>
                 
                 <form th:action="@{/logout}" method="post">
-                    <button type="submit" class="btn-logout">Logout</button>
+                    <button type="submit" class="btn-logout">CERRAR SESIÓN</button>
                 </form>
             </div>
         </div>
 
-        <h3 class="mb-4">Select your activity:</h3>
+        <h3 class="mb-4 fw-800 text-uppercase" style="color: var(--uane-dark); letter-spacing: -1px;">
+            Elige tu próxima misión:
+        </h3>
 
         <div class="row g-4">
+            
             <div class="col-md-4">
                 <div class="card card-activity h-100 p-4 text-center">
-                    <div class="display-4 mb-3">🎵</div>
-                    <h4>Sonic Challenge</h4>
-                    <p class="text-muted" th:text="${level == 'KIDS' ? 'Learn with Disney songs!' : 'Master English with Hip-Hop & Pop.'}"></p>
-                    <a href="/activity/music" class="btn btn-outline-light mt-auto">Start Training</a>
+                    <i class="bi bi-headphones card-icon-wrapper"></i>
+                    
+                    <h4 class="card-title-game">Lyrical Mastery</h4>
+                    <p class="text-muted mb-4" 
+                       th:text="${level == 'KIDS' ? '¡Aprende con canciones de Disney!' : 'Domina el inglés con Hip-Hop y Pop.'}">
+                    </p>
+                    <a th:href="@{/activity/music}" class="btn btn-game mt-auto">ENTRENAR</a>
                 </div>
             </div>
 
             <div class="col-md-4">
                 <div class="card card-activity h-100 p-4 text-center">
-                    <div class="display-4 mb-3">🧩</div>
-                    <h4>Emoji Phrase</h4>
-                    <p class="text-muted">Translate icons into English phrases.</p>
-                    <a href="/activity/emoji" class="btn btn-outline-light mt-auto">Play Now</a>
+                    <i class="bi bi-chat-quote-fill card-icon-wrapper"></i>
+
+                    <h4 class="card-title-game">Emoji Phrase</h4>
+                    <p class="text-muted mb-4">Traduce iconos en frases completas en inglés.</p>
+                    <a th:href="@{/activity/emoji}" class="btn btn-game mt-auto">JUGAR AHORA</a>
                 </div>
             </div>
 
             <div class="col-md-4">
                 <div class="card card-activity h-100 p-4 text-center">
-                    <div class="display-4 mb-3">📚</div>
-                    <h4>Match & Learn</h4>
-                    <p class="text-muted">Vocabulary from your classroom material.</p>
-                    <a href="/activity/match" class="btn btn-outline-light mt-auto">Go to Class</a>
+                    <i class="bi bi-collection-play-fill card-icon-wrapper"></i>
+
+                    <h4 class="card-title-game">Match & Learn</h4>
+                    <p class="text-muted mb-4">Vocabulario basado en tu material de clase.</p>
+                    <a th:href="@{/activity/match}" class="btn btn-game mt-auto">IR A CLASE</a>
                 </div>
             </div>
+
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

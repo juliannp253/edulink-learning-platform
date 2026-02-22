@@ -1,45 +1,30 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <title>Match & Learn - EduLink</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Match & Learn - EduLink UANE</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-        body { background-color: #0d1b2a; color: white; }
-        .word-card { 
-            background-color: #1b263b; 
-            border: 3px solid #415a77; 
-            border-radius: 15px; 
-            padding: 40px;
-            font-size: 2.5rem;
-            margin-bottom: 30px;
-            font-weight: bold;
-        }
-        .option-card {
-            background-color: #415a77;
-            border: 2px solid transparent;
-            border-radius: 10px;
-            padding: 20px;
-            cursor: pointer;
-            transition: 0.3s;
-            text-align: center;
-            font-size: 1.2rem;
-        }
-        .option-card:hover { border-color: #e0e1dd; background-color: #1b263b; }
-        .selected-correct { background-color: #2a9d8f !important; transform: scale(1.05); }
-        .selected-incorrect { background-color: #e76f51 !important; }
-    </style>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link th:href="@{/css/style.css}" rel="stylesheet">
 </head>
-<body>
-    <input type="hidden" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+<body class="bg-light">
 
-    <div class="container py-5 text-center">
-        <h2 class="mb-5">Match the word!</h2>
+    <a th:href="@{/dashboard}" class="btn-back-menu shadow-sm">
+        <i class="bi bi-arrow-left-circle-fill"></i> SALIR
+    </a>
 
-        <div class="row justify-content-center">
-            <div class="col-md-6">
-                <div class="word-card shadow animate__animated animate__fadeIn">
-                    <span th:text="${challenge.questionText}">Palabra</span>
-                    <div style="font-size: 1rem; color: #778da9;" class="mt-2 text-uppercase">Spanish</div>
+    <img th:src="@{/logo_universidad.png}" alt="Logo UANE" class="uni-logo-fixed">
+
+    <div class="container py-5 mt-4">
+        <div class="row justify-content-center text-center">
+            <div class="col-lg-7">
+                
+                <div class="mission-badge">Misión: Encuentra el Par</div>
+                
+                <div class="word-challenge-card shadow-lg animate__animated animate__zoomIn">
+                    <span class="lang-badge mb-2 d-inline-block">Español</span>
+                    <span class="word-main" th:text="${challenge.questionText}">Palabra</span>
                 </div>
 
                 <div class="row g-3">
@@ -51,13 +36,21 @@
                     </div>
                 </div>
 
-                <div id="next-container" style="display: none;" class="mt-5">
-                    <h3 class="text-success mb-3">Great job! +10 pts</h3>
-                    <a th:href="@{/activity/match(index=${nextIndex})}" class="btn btn-primary btn-lg">Next Word</a>
+                <div id="next-container" style="display: none;" class="mt-5 animate__animated animate__fadeInUp">
+                    <div class="alert alert-success border-0 shadow-sm rounded-4 py-3">
+                        <h4 class="fw-bold mb-2">¡PUNTO EXTRA!</h4>
+                        <p class="mb-0">Dominas el vocabulario a la perfección.</p>
+                    </div>
+                    <a th:href="@{/activity/match(index=${nextIndex})}" class="btn btn-game btn-lg px-5 mt-3">
+                        SIGUIENTE PALABRA <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
+
             </div>
         </div>
     </div>
+
+    <input type="hidden" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
     <script th:inline="javascript">
         function checkMatch(card, correct) {
@@ -67,19 +60,30 @@
                 card.classList.add('selected-correct');
                 document.getElementById('next-container').style.display = 'block';
                 
-                // Bloquear clics
+                // Bloquear interacción
                 const cards = document.getElementsByClassName('option-card');
                 for(let c of cards) c.style.pointerEvents = 'none';
 
-                // Puntos
+                // Llamada al backend de Spring Boot para sumar puntos
                 fetch('/api/progress/add-points', {
                     method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken }
-                }).then(res => res.json()).then(data => console.log("Total:", data.newTotal));
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': csrfToken 
+                    }
+                })
+                .then(res => res.json())
+                .then(data => console.log("Puntos actualizados:", data.newTotal))
+                .catch(err => console.error("Error al sumar puntos:", err));
 
             } else {
                 card.classList.add('selected-incorrect');
-                setTimeout(() => card.classList.remove('selected-incorrect'), 500);
+                // Efecto de rebote negativo
+                card.style.transform = "scale(0.95)";
+                setTimeout(() => {
+                    card.classList.remove('selected-incorrect');
+                    card.style.transform = "scale(1)";
+                }, 500);
             }
         }
     </script>
