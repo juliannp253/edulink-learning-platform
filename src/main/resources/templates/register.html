@@ -20,24 +20,38 @@
             
             <p class="text-muted fw-bold mb-4">Crea tu cuenta para empezar</p>
 
+            <div th:if="${error}" class="alert alert-danger" role="alert">
+                <p th:text="${error}"></p>
+            </div>
             <form th:action="@{/register}" th:object="${user}" method="post">
                 <div class="mb-3 text-start">
                     <label class="form-label">Nombre de Usuario</label>
-                    <input type="text" th:field="*{username}" class="form-control" 
-                           placeholder="EJ. JUAN123" required>
+                    <input type="text" th:field="*{username}" class="form-control" th:errorclass="is-invalid" 
+                           placeholder="EJ. JUAN123">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                </div>
+
+                <div class="mb-3 text-start">
+                    <label class="form-label">Correo</label>
+                    <input type="text" th:field="*{email}" class="form-control" th:errorclass="is-invalid"
+                           placeholder="EJ. usuario@ejemplo.com">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
                 </div>
 
                 <div class="mb-3 text-start">
                     <label class="form-label">Contraseña</label>
-                    <input type="password" th:field="*{password}" class="form-control" 
-                           placeholder="••••••••" required>
+                    <input type="password" th:field="*{password}" class="form-control" th:errorclass="is-invalid"
+                           placeholder="--------">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
                 </div>
 
                 <div class="mb-4 text-start">
                     <label class="form-label">Nivel de Experiencia</label>
-                    <select th:field="*{level}" class="form-select">
+                    <select th:field="*{level}" class="form-select" th:errorclass="is-invalid">
                         <option th:each="lvl : ${levels}" th:value="${lvl}" th:text="${lvl}"></option>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('level')}" th:errors="*{level}"></div>
                     </select>
+
                 </div>
 
                 <button type="submit" class="btn btn-game mb-3">

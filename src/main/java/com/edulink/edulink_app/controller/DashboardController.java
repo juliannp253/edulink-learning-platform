@@ -1,5 +1,7 @@
 package com.edulink.edulink_app.controller;
 
+import java.util.NoSuchElementException;
+
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -19,10 +21,12 @@ public class DashboardController {
 
     @GetMapping("/dashboard")
     public String dashboard(@AuthenticationPrincipal UserDetails userDetails, Model model) {
-        User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new NoSuchElementException("No se encontró el usuario con el correo: " + userDetails.getUsername()));
         model.addAttribute("username", user.getUsername());
         model.addAttribute("level", user.getLevel().toString());
         model.addAttribute("points", user.getTotalPoints());
+        
         return "dashboard";
     }
 }
