@@ -18,19 +18,31 @@ import com.edulink.edulink_app.repository.MusicChallengeRepository;
 import com.edulink.edulink_app.repository.UserRepository;
 import com.edulink.edulink_app.service.ChallengeService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 
 @Controller
 @RequiredArgsConstructor
+@Tag(name = "Actividades - Música", description = "Gestión de retos basados en música.")
 public class MusicActivityController {
 
     private final MusicChallengeRepository musicRepository; 
     private final UserRepository userRepository;
     private final ChallengeService challengeService; 
 
+    @Operation(
+        summary = "Cargar reto de música",
+        description = "Obtiene la lista de retos de música filtrados por el nivel del usuario autenticado y muestra el reto correspondiente al índice proporcionado."
+    )
+    @ApiResponse(responseCode = "200", description = "Vista de la actividad cargada exitosamente")
+    @ApiResponse(responseCode = "302", description = "Redirección al Dashboard si no hay retos disponibles o se completó la serie")
     @GetMapping("/activity/music")
     public String showMusicActivity(
             @AuthenticationPrincipal UserDetails userDetails,
+            @Parameter(description = "Índice del reto actual en la lista", example = "0")
             @RequestParam(defaultValue = "0") int index,
             Model model) {
         
