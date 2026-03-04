@@ -30,7 +30,7 @@
                 </div>
 
                 <div class="row g-3">
-                    <div class="col-md-6" th:each="opt : ${options}">
+                    <div class="col-md-6" th:each="opt : ${challenge.options}">
                         <button class="option-btn" 
                                 th:onclick="checkAnswer(this, [[${challenge.correctAnswer}]])">
                             <span th:text="${opt}">Opción</span>
@@ -55,9 +55,10 @@
     <input type="hidden" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
     <script th:inline="javascript">
-        function checkAnswer(btn, correct) {
+        async function checkAnswer(btn, correct) {
             const selectedAnswer = btn.innerText.trim();
             const csrfToken = document.getElementById('csrfToken').value;
+            const challengeId = [[${challenge.id}]]; 
 
             if (selectedAnswer === correct) {
                 btn.classList.add('correct');
@@ -67,21 +68,30 @@
                 const btns = document.getElementsByClassName('option-btn');
                 for(let b of btns) b.disabled = true;
 
-                // Llamada al endpoint de puntos que ya tienes configurado
-                fetch('/api/progress/add-points', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
+                try {
+                    const response = await fetch('/api/progress/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            challengeId: challengeId,
+                            selectedOption: selectedAnswer
+                        })
+                    });
+
+                    const data = await response.json();
+                    
+                    if (data.correct) {
+                        console.log("Respuesta validada por servidor. Nuevo total:", data.newTotal);
                     }
-                })
-                .then(response => response.json())
-                .then(data => console.log("Score actualizado:", data.newTotal))
-                .catch(error => console.error('Error:', error));
+                } catch (error) {
+                    console.error('Error al sincronizar puntos:', error);
+                }
 
             } else {
                 btn.classList.add('incorrect');
-                // Efecto de vibración visual rápida
                 btn.style.transform = "translateX(5px)";
                 setTimeout(() => {
                     btn.classList.remove('incorrect');

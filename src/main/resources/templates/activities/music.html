@@ -47,7 +47,7 @@
                     </p>
                     
                     <div id="options-container" style="display: none;">
-                        <button th:each="opt : ${options}" 
+                        <button th:each="opt : ${challenge.options}" 
                                 class="option-btn" 
                                 th:onclick="checkAnswer(this, [[${challenge.correctAnswer}]])">
                             <span class="badge bg-light text-dark me-2"></span>
@@ -72,7 +72,6 @@
     <input type="hidden" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
     <script th:inline="javascript">
-        // [Aquí va todo tu script de YouTube API y checkAnswer sin cambios, ya que los IDs se mantienen]
         var tag = document.createElement('script');
         tag.src = "https://www.youtube.com/iframe_api";
         var firstScriptTag = document.getElementsByTagName('script')[0];
@@ -131,25 +130,42 @@
             document.getElementById('question-text').classList.remove('text-danger', 'fw-bold');
         }
 
-        function checkAnswer(btn, correct) {
+        async function checkAnswer(btn, correct) {
             const csrfToken = document.getElementById('csrfToken').value;
+            const selectedAnswer = btn.innerText.trim();
+            const challengeId = [[${challenge.id}]]; 
 
-            if (btn.innerText.includes(correct)) {
+            if (selectedAnswer.includes(correct)) {
                 btn.classList.add('correct');
                 document.getElementById('next-container').style.display = 'block';
                 
-                fetch('/api/progress/add-points', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken
-                    }
-                })
-                .then(response => response.json())
-                .catch(err => console.error(err));
+                if (typeof player !== 'undefined' && player.pauseVideo) {
+                    player.pauseVideo();
+                }
 
-                var btns = document.getElementsByClassName('option-btn');
-                for(var i=0; i<btns.length; i++) btns[i].disabled = true;
+                const btns = document.getElementsByClassName('option-btn');
+                for(let b of btns) b.disabled = true;
+
+                try {
+                    const response = await fetch('/api/progress/submit', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken
+                        },
+                        body: JSON.stringify({
+                            challengeId: challengeId,
+                            selectedOption: selectedAnswer
+                        })
+                    });
+
+                    const data = await response.json();
+                    console.log("Servidor confirmó:", data.message, "Puntos:", data.newTotal);
+                    
+                } catch (err) {
+                    console.error("Fallo en la comunicación con la API:", err);
+                }
+
             } else {
                 btn.classList.add('incorrect');
                 setTimeout(() => btn.classList.remove('incorrect'), 1000);

@@ -28,7 +28,7 @@
                 </div>
 
                 <div class="row g-3">
-                    <div class="col-6" th:each="opt : ${options}">
+                    <div class="col-6" th:each="opt : ${challenge.options}">
                         <div class="option-card shadow-sm" 
                              th:text="${opt}" 
                              th:onclick="checkMatch(this, [[${challenge.correctAnswer}]])">
@@ -53,33 +53,47 @@
     <input type="hidden" id="csrfToken" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
 
     <script th:inline="javascript">
-        function checkMatch(card, correct) {
+        async function checkMatch(card, correct) {
             const csrfToken = document.getElementById('csrfToken').value;
+            const selectedAnswer = card.innerText.trim();
+            const challengeId = [[${challenge.id}]]; // Inyectado por Thymeleaf
 
-            if (card.innerText.trim() === correct) {
+            if (selectedAnswer === correct) {
+                // 1. Feedback Visual de Acierto
                 card.classList.add('selected-correct');
                 document.getElementById('next-container').style.display = 'block';
                 
-                // Bloquear interacción
+                // Bloquear interacción para evitar múltiples envíos
                 const cards = document.getElementsByClassName('option-card');
                 for(let c of cards) c.style.pointerEvents = 'none';
 
-                // Llamada al backend de Spring Boot para sumar puntos
-                fetch('/api/progress/add-points', {
-                    method: 'POST',
-                    headers: { 
-                        'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': csrfToken 
+                // 2. Sincronización Profesional con el Backend
+                try {
+                    const response = await fetch('/api/progress/submit', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': csrfToken 
+                        },
+                        body: JSON.stringify({
+                            challengeId: challengeId,
+                            selectedOption: selectedAnswer
+                        })
+                    });
+
+                    const data = await response.json();
+                    if (data.correct) {
+                        console.log("Puntos validados por el servidor:", data.newTotal);
                     }
-                })
-                .then(res => res.json())
-                .then(data => console.log("Puntos actualizados:", data.newTotal))
-                .catch(err => console.error("Error al sumar puntos:", err));
+                } catch (err) {
+                    console.error("Error en la comunicación con el servidor:", err);
+                }
 
             } else {
+                // 3. Feedback Visual de Error
                 card.classList.add('selected-incorrect');
-                // Efecto de rebote negativo
                 card.style.transform = "scale(0.95)";
+                
                 setTimeout(() => {
                     card.classList.remove('selected-incorrect');
                     card.style.transform = "scale(1)";

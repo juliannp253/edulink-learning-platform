@@ -1,8 +1,8 @@
 package com.edulink.edulink_app.controller;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.NoSuchElementException;
 
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,11 +11,12 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-import com.edulink.edulink_app.model.ActivityType;
-import com.edulink.edulink_app.model.Challenge;
+import com.edulink.edulink_app.dto.ChallengeResponseDTO;
+import com.edulink.edulink_app.model.MusicChallenge;
 import com.edulink.edulink_app.model.User;
-import com.edulink.edulink_app.repository.ChallengeRepository;
+import com.edulink.edulink_app.repository.MusicChallengeRepository;
 import com.edulink.edulink_app.repository.UserRepository;
+import com.edulink.edulink_app.service.ChallengeService;
 
 import lombok.RequiredArgsConstructor;
 
@@ -23,30 +24,35 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class MusicActivityController {
 
-    private final ChallengeRepository challengeRepository;
+    private final MusicChallengeRepository musicRepository; 
     private final UserRepository userRepository;
+    private final ChallengeService challengeService; 
 
     @GetMapping("/activity/music")
     public String showMusicActivity(
             @AuthenticationPrincipal UserDetails userDetails,
-            @RequestParam(defaultValue = "0") int index, // Maneja el progreso por índice
+            @RequestParam(defaultValue = "0") int index,
             Model model) {
         
-        User user = userRepository.findByUsername(userDetails.getUsername()).orElseThrow();
-        List<Challenge> challenges = challengeRepository.findByTypeAndLevel(ActivityType.MUSIC, user.getLevel());
+        // Buscar Usuario por email
+        User user = userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new NoSuchElementException("Usuario no encontrado"));
+
+        // Obtener solo retos de música para el nivel del usuario
+        List<MusicChallenge> challenges = musicRepository.findByLevel(user.getLevel());
 
         if (challenges.isEmpty() || index >= challenges.size()) {
-            return "redirect:/dashboard?finish=true"; // Si terminó todos, vuelve al dashboard
+            return "redirect:/dashboard?finish=true";
         }
 
-        Challenge currentChallenge = challenges.get(index);
+        // 3. Obtenemos el reto actual y lo convertimos a DTO
+        MusicChallenge currentChallenge = challenges.get(index);
+        ChallengeResponseDTO challengeDTO = challengeService.mapToDTO(currentChallenge);
         
         // --- Lógica de Aleatoriedad ---
-        List<String> optionsList = Arrays.asList(currentChallenge.getOptions().split(","));
-        Collections.shuffle(optionsList); // Mezclamos las opciones para que nunca sea la misma posición
+        Collections.shuffle(challengeDTO.options()); 
 
-        model.addAttribute("challenge", currentChallenge);
-        model.addAttribute("options", optionsList);
+        model.addAttribute("challenge", challengeDTO);
         model.addAttribute("currentIndex", index);
         model.addAttribute("nextIndex", index + 1);
         model.addAttribute("totalChallenges", challenges.size());
